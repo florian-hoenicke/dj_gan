@@ -1,2 +1,5 @@
 tensorflow==2.3.0
 mido==1.2.9
+music21
+pretty-midi
+tensorflow-datasets
