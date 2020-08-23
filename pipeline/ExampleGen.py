@@ -5,10 +5,13 @@ from glob import glob
 import tensorflow as tf
 
 class ExampleGen():
-    def __init__(self, use_cache=True):
-        self.rootdir = 'data/midi/'
-        self.cache_dir = 'data/cache/examples'
+    def __init__(self, use_cache=True, validation_data_split=0.2, max_examples=None):
+        self.rootdir = 'data/midis/'
+        self.cache_dir = 'data/cache/examples/'
         self.use_cache = use_cache
+        self.validation_data_split = validation_data_split
+        self.max_examples = max_examples
+        self.current_example = 1
 
     def __call__(self, *args, **kwargs):
         return self.create_train_and_test()
@@ -30,12 +33,11 @@ class ExampleGen():
 
     def instrument_generator_factory(self, files):
         def instrument_generator():
-            print('method called')
             for file in files:
                 try:
                     midi_pretty_format = pretty_midi.PrettyMIDI(file)
                 except:
-                    print('not midi', file)
+                    print('can not read file', file)
                     continue
                 for i, instrument in enumerate(midi_pretty_format.instruments):
                     yield self.serialize_instrument(instrument)
@@ -43,28 +45,28 @@ class ExampleGen():
 
     def save_as_tfrecord(self, files, file_name):
         file_path = f"{self.cache_dir}{file_name}.tfrecord"
-        if not self.use_cache or not os.path.exists(file_path):
+        file_exists = os.path.exists(file_path)
+        if not self.use_cache or not file_exists:
+            if file_exists:
+                os.remove(file_path)
             with tf.io.TFRecordWriter(file_path) as tfwriter:
                 for example in self.instrument_generator_factory(files)():
                     tfwriter.write(example.SerializeToString())
+                    if self.current_example > self.max_examples:
+                        break
+                    self.current_example += 1
         return file_path
 
-    def create_train_and_test(self, validation_data_split=0.2):
-        self.download_files()
+    def create_train_and_test(self):
         all_files = [f for f in glob(f"{self.rootdir}**/*.mid", recursive=True)]
-        split_index = int(len(all_files) * validation_data_split)
+        split_index = int(len(all_files) * self.validation_data_split)
         train = all_files[split_index:]
         test = all_files[:split_index]
         train_file = self.save_as_tfrecord(train, 'train')
         test_file = self.save_as_tfrecord(test, 'test')
         return train_file, test_file
 
-    def download_files(self):
-        tf.keras.utils.get_file('midi.tar.zip', 'https://drive.google.com/u/0/uc?export=download&confirm=Ce6C&id=0B4wY8oEgAUnjX3NzSUJCNVZHbmc')
-
-
 
 if __name__ == '__main__':
-    ExampleGen().download_files()
-    # ExampleGen().create_train_and_test()
+    ExampleGen().create_train_and_test()
 

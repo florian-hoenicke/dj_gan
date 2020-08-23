@@ -14,7 +14,6 @@ class Preprocessor:
             for filename in [f for f in filenames if f.endswith(".mid")]:
                 yield os.path.join(dirpath, filename)
 
-    def
 
 if __name__ == "__main__":
     pp = Preprocessor("../data")
