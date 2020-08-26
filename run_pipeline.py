@@ -1,11 +1,10 @@
 from pipeline.ExampleGen import ExampleGen
-import tensorflow as tf
+from pipeline.StatisticGen import StatisticGen
 
-train_path, test_path = ExampleGen(use_cache=True, max_examples=100)()
-train_dataset = tf.data.TFRecordDataset(train_path)
-for x in train_dataset:
-    print(tf.train.Example.FromString(x.numpy()))
-# train_dataset = train_path.map(lambda x: tf.train.Example.FromString(x.numpy()))
+from pipeline.Trainer import Trainer
+from pipeline.Transformer import Transformer
 
-
-# print(train_path, test_path)
+train_raw_path, test_raw_path = ExampleGen(use_cache=True, max_examples=1000)()
+stats = StatisticGen(train_raw_path)()
+train_transformed_path, test_transformed_path = Transformer([train_raw_path, test_raw_path], stats)()
+Trainer(train_transformed_path, test_transformed_path)()
