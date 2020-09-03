@@ -5,3 +5,8 @@ pretty-midi
 tensorflow-datasets
 pydot
 runstats
+midi2audio
+librosa
+pydub
+matplotlib
+opencv-python

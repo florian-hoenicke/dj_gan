@@ -19,17 +19,26 @@ class ExampleGen():
     def __call__(self, *args, **kwargs):
         return self.create_train_and_test()
 
-    def serialize_instrument(self, instrument):
+    def serialize_instrument(self, instrument, resolution):
+        pauses = []
+        for i in range(0, len(instrument.notes) - 1):
+            note1 = instrument.notes[i]
+            note2 = instrument.notes[i + 1]
+            pause = note2.start - note1.end
+            pauses.append(pause)
+
+
+        print(pauses)
         return {
             # categorical features
             'instrument_type': instrument.program,
             'is_drum': 1 if instrument.is_drum else 0,
             'octaves': [note.pitch // 12 for note in instrument.notes],
             'tones': [note.pitch % 12 for note in instrument.notes],
-            'durations': [note.duration for note in instrument.notes],
+            'durations':  [note.duration for note in instrument.notes],
             'velocity': [note.velocity for note in instrument.notes],
+            'breaks': pauses
         }
-
 
 
     def instrument_generator_factory(self, files):
@@ -41,7 +50,7 @@ class ExampleGen():
                     print('can not read file', file)
                     continue
                 for i, instrument in enumerate(midi_pretty_format.instruments):
-                    yield self.serialize_instrument(instrument)
+                    yield self.serialize_instrument(instrument, midi_pretty_format.resolution)
                     if self.current_example > self.max_examples:
                         return
                     self.current_example += 1

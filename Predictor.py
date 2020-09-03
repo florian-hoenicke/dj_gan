@@ -11,6 +11,7 @@ class Predictor:
         self.stats_dict = TFRecordTools.read_stats_from_json('data/cache/examples/stats.json')
         self.model = self.load_trained_model()
         self.sequence_length = 1
+        self.temperature = 0.8
 
     def predict(self, steps_to_predict, prediction_seeds):
         self.model.reset_states()
@@ -25,14 +26,13 @@ class Predictor:
         return final_prediction
 
     def load_trained_model(self):
-        model = RNNModel.create(sequence_length=1, batch_size=1)
+        model = RNNModel.create(sequence_length=1, batch_size=1, stateful=True)
         model.load_weights('data/model/weights/rnn')
         tf.keras.utils.plot_model(model, 'rnn_seq_1')
         return model
         # tf.keras.models.load_model('data/model/rnn/')
 
     def sample_from_prediction(self, prediction, previous):
-        print(prediction)
         return {
             'instrument_type': previous['instrument_type'],
             'is_drum': previous['is_drum'],
@@ -43,7 +43,10 @@ class Predictor:
         }
 
     def sample(self, probability_distribution):
-        x = np.random.choice(probability_distribution.shape[-1], p=probability_distribution[0, 0])
+        dist = probability_distribution[0, 0]
+        pot = np.power(dist, 1/self.temperature)
+        new_dist = pot / sum(pot)
+        x = np.random.choice(probability_distribution.shape[-1], p=new_dist)
         x = np.array([[x]])
         return x
 
@@ -60,16 +63,41 @@ class Predictor:
 
 
 if __name__ == '__main__':
-    sequence = Predictor().predict(
-        steps_to_predict=200,
-        prediction_seeds=[{
-            'instrument_type': np.ones((1, 1)),
-            'is_drum': np.ones((1, 1)),
-            'durations_in': np.ones((1, 1)),
-            'velocity_in': np.ones((1, 1)),
-            'tones_in': np.ones((1, 1)),
-            'octaves_in': np.ones((1, 1)),
-        }]
-    )
-    midi = MIDITools.save_sequence_as_midi(sequence, 'data/generated/example.midi')
+    for program in range(0, 1):
+        sequence = Predictor().predict(
+            steps_to_predict=200,
+            prediction_seeds=[
+                {
+                    'instrument_type': np.array([[program]]),
+                    'is_drum': np.array([[0]]),
+                    'durations_in': np.array([[0.2]]),
+                    'velocity_in': np.array([[100]]),
+                    'tones_in': np.array([[0]]),
+                    'octaves_in': np.array([[4]]),
+                },{
+                    'instrument_type': np.array([[program]]),
+                    'is_drum': np.array([[0]]),
+                    'durations_in': np.array([[0.2]]),
+                    'velocity_in': np.array([[100]]),
+                    'tones_in': np.array([[2]]),
+                    'octaves_in': np.array([[4]]),
+                },{
+                    'instrument_type': np.array([[program]]),
+                    'is_drum': np.array([[0]]),
+                    'durations_in': np.array([[0.2]]),
+                    'velocity_in': np.array([[100]]),
+                    'tones_in': np.array([[3]]),
+                    'octaves_in': np.array([[4]]),
+                },
+                {
+                    'instrument_type': np.array([[program]]),
+                    'is_drum': np.array([[0]]),
+                    'durations_in': np.array([[0.2]]),
+                    'velocity_in': np.array([[100]]),
+                    'tones_in': np.array([[5]]),
+                    'octaves_in': np.array([[4]]),
+                }
+            ]
+        )
+        midi = MIDITools.save_sequence_as_midi(sequence, f'data/generated/example{program}')
 

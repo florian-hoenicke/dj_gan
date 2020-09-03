@@ -28,15 +28,17 @@ class Transformer:
             'velocity_in': track['velocity'][start: end - 1],
             'tones_in': track['tones'][start: end - 1],
             'octaves_in': track['octaves'][start: end - 1],
+            'breaks_in': track['breaks'][start: end - 1],
             'durations_out': track['durations'][start + 1: end],
             'velocity_out': track['velocity'][start + 1: end],
             'tones_out': track['tones'][start + 1: end],
             'octaves_out': track['octaves'][start + 1: end],
+            'breaks_out': track['breaks'][start + 1: end],
         }
         return sub_track
 
     def normalize_track(self, track):
-        for attribute in ['velocity', 'durations']:
+        for attribute in ['velocity', 'durations', 'breaks']:
             value_list = track[attribute]
             for i in range(len(value_list)):
                 value_list[i] = (value_list[i] - self.stats[attribute]['mean']) / self.stats[attribute]['variance']

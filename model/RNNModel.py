@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 def create(sequence_length=100, max_tones=12, max_octaves=20, rnn_units=256, hidden_dense_size=100, tones_rnn_dim=32,
-           octaves_rnn_dim=32, batch_size=None):
+           octaves_rnn_dim=32, batch_size=None, stateful=False):
     instrument_type_in = tf.keras.layers.Input(shape=(sequence_length,), name='instrument_type', batch_size=batch_size)
     is_drum_in = tf.keras.layers.Input(shape=(sequence_length,), name='is_drum', batch_size=batch_size)
 
@@ -24,7 +24,8 @@ def create(sequence_length=100, max_tones=12, max_octaves=20, rnn_units=256, hid
     gru_states = [
         tf.keras.layers.GRU(
             units=rnn_units,
-            return_sequences=True
+            return_sequences=True,
+            stateful=stateful,
         )(x) for x in [durations_reshaped, velocities_reshaped, tones_embedding, octaves_embedding]
     ]
     concatenation = tf.keras.layers.concatenate(gru_states + [instrument_type_enbedding, is_drum_embedding])
